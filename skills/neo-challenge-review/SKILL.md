@@ -1,0 +1,241 @@
+---
+name: neo-challenge-review
+description: Critical review of a take-home tech-challenge submission for recruitment.
+  Run from the submission repository root. Requires 3 input files at the root (jd*, challenge*,
+  cv* as .pdf or .md). Fans out one dedicated agent per indicator in parallel (via a workflow),
+  builds blind AI baseline implementations to separate candidate contributions from AI
+  contributions, then synthesizes. Produces a scored review report (DevEx, AI usage rate & quality, security,
+  production readiness, automation, tests, challenge coverage, runability — including a
+  best-effort run of the project — plus an overall quality score with a radar chart) in an
+  output/ directory (reused across runs; timestamp-suffixed only when output/ holds files that
+  are not this skill's artifacts).
+  Depth is tunable via a single-word argument: analyze, run, or benchmark.
+  Use when reviewing a candidate's tech challenge, take-home assignment, or hiring submission.
+disable-model-invocation: true
+argument-hint: "analyze | run | benchmark — purpose of the launched tests (no argument: lists the options)"
+---
+
+# Neo Challenge Review
+
+Critically review the tech-challenge submission located in the current working directory and
+produce a scored, evidence-based review report.
+
+## Step 0 — Inputs & preconditions (MUST pass before anything else)
+
+Three input files are REQUIRED at the submission root:
+
+| # | Input | Naming rule (case-insensitive) |
+|---|-------|--------------------------------|
+| 1 | Job Description (JD) | `jd*.pdf` or `jd*.md` |
+| 2 | Tech challenge statement | `challenge*.pdf` or `challenge*.md` |
+| 3 | Candidate CV / resume | `cv*.pdf` or `cv*.md` |
+
+Current root listing:
+
+!`ls -1`
+
+Validate the listing above against the naming rules, strictly:
+
+- **Fail fast**: if even ONE input is missing, or ambiguous (several files match the same
+  prefix), STOP the process immediately. Do NOT start any analysis.
+- **Never infer**: never guess a missing input (e.g. do not pick "the most likely PDF") and
+  never continue with partial inputs.
+- On failure, print exactly which input(s) are missing or ambiguous, recall the naming
+  convention above, then end the turn.
+
+## Step 1 — Review mode (from $ARGUMENTS)
+
+The invocation argument (`$ARGUMENTS`) is a SINGLE WORD naming the purpose of the tests to
+launch — validate it BEFORE any user interaction or analysis:
+
+| Word | Streams | Meaning |
+|------|---------|---------|
+| `analyze` | A | Code-base analysis only (indicators 1–8 + interview questions) — the candidate's code base is NEVER executed |
+| `run` | A + B | `analyze` + run the candidate's code base (Runability, indicator 9) — the report is updated with the run status |
+| `benchmark` | A + B + C | `run` + the AI benchmark (2 blind simulations + comparison) — the report is updated with the candidate-vs-AI results |
+
+- Empty `$ARGUMENTS` → display the table above (each word with its description) as a usage
+  help, then STOP: no default is assumed, no analysis is launched — the user re-invokes with
+  the chosen word.
+- Any other value → STOP immediately and show the expected syntax: `/neo-challenge-review run`.
+
+## Step 2 — Role identification & confirmation (blocking checkpoint)
+
+1. Read the JD file and extract the recruited role title, seniority included (e.g.
+   `Platform Engineer`, `Senior Data Engineer`) — it is stated at the beginning of the document.
+2. Ask the user to confirm it (use AskUserQuestion): "Role identified from the JD: <title> — is
+   this the role we are evaluating for?", with the option to correct it.
+3. Continue only after confirmation; if the user corrects the title, use the corrected one.
+   The confirmed role sets the evaluation bar: the more senior the role, the stricter the
+   review.
+
+## Context
+
+- The candidate had about 2 full weeks at home, in full autonomy.
+- Any tool is allowed; using AI and agentic coding tools (e.g. Claude Code) is explicitly
+  encouraged — BUT the candidate is expected to disclose which AI tools they used, ideally
+  justifying those choices and explaining how they used them.
+- Review focus: the candidate's reasoning ability, engineering best practices, whether the
+  product is usable in production, and easily maintainable over time.
+
+## Workflow — three parallel analysis streams, progressive report
+
+You are the orchestrator. Up to three analysis streams — per the mode selected in Step 1 — run
+concurrently in the background; you write the report as soon as the code analysis lands, then
+update it in place as each remaining enabled stream completes.
+
+1. Read the 3 input files: JD → role expectations (feeds JD Fit); challenge → requirements;
+   CV → seniority calibration. The role confirmed in Step 2 sets the evaluation bar.
+   Determine the run's OUTPUT DIRECTORY (all report artifacts go there), at the submission
+   root:
+   - `output/` does not exist → use `output/`.
+   - `output/` exists and is empty, or contains ONLY artifacts generated by this skill
+     (`challenge-review-*.md` reports and their translations, an `ai-baseline/` directory) →
+     REUSE `output/`.
+   - `output/` exists and contains ANY other file (it belongs to the candidate's project or to
+     something else) → use a new date-time-suffixed directory instead:
+     `output-{YYYY-MM-DD-HH-MM-SS}/`.
+   - Unsure whether the content is a previous run's artifacts → ask the user
+     (AskUserQuestion): reuse `output/` or create the suffixed directory.
+   Build the candidate PERSONA: 1–3 sentences distilled from the CV and the confirmed role,
+   telling an agent who it is — e.g. "You are a Senior Data Engineer, familiar with Airflow,
+   KubernetesPodOperator, Kubernetes, Terraform; ~8 years of experience on data platforms." —
+   used in `benchmark` mode so the AI baselines deliver at the candidate's level (it sets the
+   height of the expectation bar). Then build the shared `args` object
+   (all paths absolute except `outputDir`, which is the directory name relative to the
+   submission root; the same object is passed to both workflows — the skill directory is the
+   one this SKILL.md was loaded from, `~/.claude/skills/neo-challenge-review/` for a
+   user-level install):
+
+   ```json
+   {
+     "role": "<confirmed role title>",
+     "criteriaPath": "<skill directory>/references/evaluation-criteria.md",
+     "submissionDir": "<submission root>",
+     "outputDir": "<output | output-{YYYY-MM-DD-HH-MM-SS}>",
+     "jdFile": "<jd file name>",
+     "challengeFile": "<challenge file name>",
+     "cvFile": "<cv file name>",
+     "persona": "<who the candidate is — role + key skills/experience distilled from the CV>",
+     "runId": "<short unique run id, e.g. ncr-{YYYYMMDDHHMM}>"
+   }
+   ```
+
+   `runId` namespaces every shared resource the two baseline simulations create while running
+   concurrently on this machine.
+
+   **CRITICAL — pass `args` as a real JSON object in the Workflow tool call, NEVER as a
+   JSON-encoded string**: a stringified object reaches the script as one opaque string and
+   every field resolves to `undefined` (e.g. "for the role: undefined" in agent prompts).
+   Both scripts fail fast with an explicit error if `args` is missing, stringified beyond
+   repair, or lacks a required field — fix the call instead of retrying blindly.
+
+2. **Resume check — never reprocess completed work**: in the chosen output directory, look
+   for the most recent `challenge-review-*.md` and read its `neo-challenge-review:state`
+   metadata block (see the report template). For every stream required by the selected mode
+   that is marked `completed` there: do NOT relaunch it — reuse the existing report file and
+   its content (parse the raw scores and sections already written). Launch only the missing
+   streams and update the same report in place. Typical case: `analyze` was performed earlier,
+   then `benchmark` is launched → only Streams B and C run; indicators 1–8 come from the
+   existing report. A report without a parseable state block cannot be resumed: leave it
+   untouched and start a new report file. Refresh the state block on EVERY report write
+   (stream statuses + timestamps + finalized flag).
+3. Launch the streams enabled by the selected mode (`analyze`: A only; `run`: A + B;
+   `benchmark`: A + B + C), MINUS those marked completed by the resume check, in a SINGLE
+   message so they run concurrently (each runs in the background and notifies you when it
+   completes):
+   - **Stream A — code analysis**: `Workflow` tool,
+     `scriptPath: <skill directory>/scripts/code-analysis-workflow.js`, the shared `args` →
+     8 agents (indicators 1–8, labels `kpi:<key>`), schema-validated results.
+   - **Stream B — runability**: `Agent` tool with `isolation: "worktree"` — brief: evaluate
+     "Indicator 9 — Runability & Documentation Accuracy" strictly per its section in
+     `references/evaluation-criteria.md` (give the absolute path), for the confirmed role, on
+     the submission repository; it must return ONLY a JSON object `{indicator: 9, name, score,
+     confidence, one_line_rationale, detailed_analysis_md, strengths, critical_points,
+     uncertainties, command_log: [{command, exit_code, result}]}` — `command_log` lists EVERY
+     command executed, in order, with its exit code and a relevant output excerpt. Its
+     best-effort fixes must stay INSIDE its worktree; everything else on the machine is
+     read-only for it.
+   - **Stream C — AI benchmark**: `Workflow` tool,
+     `scriptPath: <skill directory>/scripts/baseline-benchmark-workflow.js`, the same `args` →
+     2 blind agents (labels `baseline:solution-a/b`), each in its own isolated git worktree,
+     that read ONLY the JD and the challenge (absolute paths — those files are untracked, so
+     absent from the worktrees), then **design, build, execute, and test** a full
+     implementation simultaneously — each agent IMPERSONATES the candidate's persona
+     (distilled from the CV + role) so the expectation bar matches the candidate's level,
+     while staying fully blind to the submission itself — collisions
+     prevented by port parity (solution-a even port numbers only, solution-b odd only) and by
+     prefixing every shared-resource identifier (containers, networks, images, namespaces,
+     kind clusters, temp dirs) with `<runId>-a` / `<runId>-b`, with mandatory teardown; each
+     returns the ABSOLUTE `output_dir` of its implementation; then the `Compare` agent scores
+     the submission against the baselines read at those paths (similarity findings, weak AI
+     signals, one adjustment delta per KPI).
+4. **Report v1 — as soon as Stream A completes** (skip when Stream A was reused from a
+   previous run — just refresh the state block): write
+   `<outputDir>/challenge-review-{YYYY-MM-DD-HH-MM}.md` (English) from
+   [report-template.md](report-template.md) with the RAW scores of indicators 1–8. State the
+   review mode in the Context section. For the Runability scorecard row / section 6.9 and the
+   "Candidate Contributions vs AI Contributions" section: mark them `⏳ pending` when their
+   stream is enabled and still running, or `Not run (mode: <word>)` when disabled by the mode.
+   Flag Overall Quality as provisional while enabled streams remain; radar: raw values for 1–8
+   and 0 for Runability with a "(pending)" or "(not run)" note. Scorecard columns: in
+   `benchmark` mode keep Raw + Adjusted (Adjusted `⏳ pending` until Stream C lands); in
+   `analyze` and `run` modes HIDE the Adjusted column — a single `Score` column holds the raw
+   values. Post a one-line chat status.
+5. **When Stream B completes** (modes `run` and `benchmark`): update the report in place — section 6.9, the
+   Runability raw score in the scorecard, the radar. If Stream C has already landed, apply
+   indicator 9's delta now. One-line chat status.
+6. **When Stream C completes** (mode `benchmark`): apply the candidate-vs-AI adjustment pass — for each
+   indicator whose raw score is available, `adjusted = clamp(raw + delta, 0, 100)`; you
+   arbitrate: only keep a delta whose reason is backed by evidence, and document every
+   arbitration. Fill the "Candidate Contributions vs AI Contributions" section (the
+   comparison's `section_md`, the baselines' output dirs and execution reports, your
+   arbitrations). If the workflow returns `comparison: null`, state that the pass could not
+   run and keep the raw scores. One-line chat status.
+7. **Once every ENABLED stream has landed** (streams reused from a previous run count as
+   landed) **— finalize**: Overall Quality from the ADJUSTED
+   scores when Stream C ran, otherwise from the raw scores (in `analyze` mode it covers
+   indicators 1–8 only — say so in the report); a reasoned synthesis weighted by the role and the challenge
+   requirements, not a mechanical average. Radar on the final values, Strengths & Critical
+   Points table (deduplicated union of the agents' `strengths` / `critical_points`), JD Fit
+   and Verdict written by you. Without Stream C (modes `analyze` / `run`), the Adjusted column
+   is HIDDEN — the scorecard keeps a single `Score` column with the raw values.
+8. Interview-questions pass (always re-run when any new stream content was added — the
+   questions depend on the full report): launch ONE agent (via the `Agent` tool) whose brief is the
+   section "Final pass — Interview Questions" of
+   [references/evaluation-criteria.md](references/evaluation-criteria.md). Give it: the report
+   path, the submission root, and the JD / challenge file names. It returns 10 questions
+   (topics: architecture structure, separation of concerns, infra, security, code, tests)
+   probing whether the candidate masters the submission or is passively driven by the AI.
+   This agent is READ-ONLY (it writes nothing; you insert its questions). Insert them into the
+   report's Interview Questions section.
+9. Only then: if the conversation language is not English, write the translated copy suffixed
+   with the language code, e.g. `<outputDir>/challenge-review-{YYYY-MM-DD-HH-MM}.fr.md` — never
+   translate intermediate versions. Then post the final chat summary: the 9 adjusted scores
+   (mention notable raw→adjusted moves) + the overall score, the similarity verdict, the major
+   strengths and critical points, and the hiring recommendation. The Mermaid radar chart lives
+   in the report file.
+10. If any stream reports lost or skipped agents (`skipped > 0`, `baselinesSkipped > 0`, or a
+    lost runability agent), state it explicitly in the report and in the chat — never
+    synthesize silently over partial results.
+11. Fallback: if the `Workflow` tool is unavailable in this environment, run the same fan-outs
+    with the `Agent` tool (same prompts as the scripts, baselines and runability with
+    `isolation: worktree`), launching each stream's agents in a single message so they run in
+    parallel.
+
+## Constraints
+
+- **File-system guardrail**: creating, modifying, or deleting files/directories is allowed
+  ONLY inside the current directory (the candidate's submission folder) — plus, for agents
+  running in an isolated worktree, inside their own worktree. Everything else on this machine
+  is strictly read-only: never write outside these scopes, never change global state
+  (`git config --global`, shell profiles, tool installs), never modify this skill's own files.
+  Propagate this rule to EVERY agent you spawn.
+- Be critical and factual, not complacent: back every claim with evidence found in the
+  repository.
+- Do not penalize AI usage per se (it is encouraged) — judge the quality of how it was piloted.
+- Explicitly flag the uncertainty areas of each score (especially AI Usage Rate, which is an
+  estimate).
+- Indicator agents are independent by design (no cross-indicator bias): each one only sees its
+  own checklist. Overlaps or contradictions between indicators are arbitrated by the
+  orchestrator at synthesis time.
