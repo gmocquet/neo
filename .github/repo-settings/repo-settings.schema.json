@@ -135,7 +135,38 @@
             "code_scanning"
           ]
         },
-        "parameters": { "$ref": "#/$defs/pull_request_parameters" }
+        "parameters": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "pull_request" } } },
+          "then": { "properties": { "parameters": { "$ref": "#/$defs/pull_request_parameters" } } }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "required_status_checks" } } },
+          "then": { "properties": { "parameters": { "$ref": "#/$defs/required_status_checks_parameters" } } }
+        }
+      ]
+    },
+    "required_status_checks_parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Parameters of the 'required_status_checks' rule type.",
+      "properties": {
+        "strict_required_status_checks_policy": { "type": "boolean" },
+        "do_not_enforce_on_create": { "type": "boolean" },
+        "required_status_checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["context"],
+            "properties": {
+              "context": { "type": "string" },
+              "integration_id": { "type": "integer" }
+            }
+          }
+        }
       }
     },
     "pull_request_parameters": {
