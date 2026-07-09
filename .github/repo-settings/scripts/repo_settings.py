@@ -34,6 +34,9 @@ DEFAULT_REPO = "gmocquet/neo"
 
 # Managed keys of the "Update a repository" API body. Null-valued live keys are
 # omitted from the export so apply never clears an unset field.
+# `allow_forking` is intentionally excluded: GitHub rejects it via PATCH on
+# public or user-owned repositories ("Allow forks setting can only be changed on
+# org-owned private repositories", HTTP 422), and a PATCH is atomic.
 REPOSITORY_KEYS = [
     "description",
     "homepage",
@@ -45,7 +48,6 @@ REPOSITORY_KEYS = [
     "has_discussions",
     "has_downloads",
     "is_template",
-    "allow_forking",
     "web_commit_signoff_required",
     "allow_squash_merge",
     "allow_merge_commit",
