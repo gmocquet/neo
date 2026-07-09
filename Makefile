@@ -64,16 +64,16 @@ hooks-add: ## Register this repo's hooks in the user's Claude Code settings (jq 
 hooks-remove: ## Unregister this repo's hooks from the user's Claude Code settings (other hooks and keys preserved)
 	@"$(CURDIR)/hooks/hooks-config.sh" remove
 
-repo-settings-export: ## Export the live repo config into .github/repo-settings/settings.json (manual)
+repo-settings-export: ## Export the live repo config into .github/repo-settings/repo-settings.json (manual)
 	@$(REPO_SETTINGS) export --repo $(REPO)
 
-repo-settings-validate: ## Validate settings.json against the JSON Schema
+repo-settings-validate: ## Validate repo-settings.json against the JSON Schema
 	@$(REPO_SETTINGS) validate
 
-repo-settings-diff: ## Show drift between settings.json and the live repo config (check before pushing)
+repo-settings-diff: ## Show drift between repo-settings.json and the live repo config (check before pushing)
 	@$(REPO_SETTINGS) diff --repo $(REPO)
 
-repo-settings-apply: ## Apply settings.json to the repo config via the API
+repo-settings-apply: ## Apply repo-settings.json to the repo config via the API
 	@$(REPO_SETTINGS) apply --repo $(REPO)
 
 repo-settings-token-set: ## Open the pre-filled PAT creation page, wait for the token, then store it as the REPO_SETTINGS_TOKEN secret
@@ -98,7 +98,7 @@ repo-settings-token-set: ## Open the pre-filled PAT creation page, wait for the 
 	@echo "  1. Check it:          make repo-settings-token-status"
 	@echo "  2. Preview the drift:  make repo-settings-diff"
 	@echo "  3. Re-run the red 'repo-settings' CI check on your PR (or push again) — it passes now."
-	@echo "  4. Merge the PR; on the main branch the CI applies settings.json to the repo."
+	@echo "  4. Merge the PR; on the main branch the CI applies repo-settings.json to the repo."
 
 repo-settings-token-status: ## Report whether the REPO_SETTINGS_TOKEN Actions secret exists
 	@gh secret list --repo $(REPO) | grep -q '^$(REPO_SETTINGS_SECRET)[[:space:]]' \

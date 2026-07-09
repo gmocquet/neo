@@ -12,7 +12,7 @@ around tool calls); over time it will grow into more AI helpers.
 Everything here is designed to be installed at the **user level** of the coding
 agent (`~/.claude` for Claude Code), so the assets are available in every project
 you work on — not per-repository: skills are symlinked into `~/.claude/skills`,
-hooks are registered in `~/.claude/settings.json`. Any agent that supports the
+hooks are registered in `~/.claude/repo-settings.json`. Any agent that supports the
 same skill format (Claude Code, Codex, ...) can consume the skills.
 
 ## Who is it for?
@@ -129,7 +129,7 @@ pre-commit install
 ### Enable the hooks
 
 Unlike skills, hooks are not discovered from a directory: they are registered in
-Claude Code settings — `~/.claude/settings.json` (user scope, so the guardrails
+Claude Code settings — `~/.claude/repo-settings.json` (user scope, so the guardrails
 protect **every** repository you work on):
 
 ```bash
@@ -176,17 +176,17 @@ into this repository, and leaves anything else in `~/.claude/skills` alone.
 ## Repository settings as code
 
 The repository's GitHub configuration — core settings/features, rulesets, and
-outside collaborators — is versioned under `.github/repo-settings/settings.json`
+outside collaborators — is versioned under `.github/repo-settings/repo-settings.json`
 and validated against `repo-settings.schema.json`. This makes the repo
 reproducible: the whole configuration can be re-applied to a fresh repo. The
 engine is a small [uv](https://docs.astral.sh/uv/) project
 (`.github/repo-settings/`) driving the GitHub API through `gh`.
 
 ```bash
-make repo-settings-export    # live repo -> settings.json (manual; run when you change config in the UI)
-make repo-settings-validate  # validate settings.json against the schema
-make repo-settings-diff      # show drift between settings.json and the live repo (check before pushing)
-make repo-settings-apply     # settings.json -> live repo
+make repo-settings-export    # live repo -> repo-settings.json (manual; run when you change config in the UI)
+make repo-settings-validate  # validate repo-settings.json against the schema
+make repo-settings-diff      # show drift between repo-settings.json and the live repo (check before pushing)
+make repo-settings-apply     # repo-settings.json -> live repo
 ```
 
 Target another repo with `make repo-settings-diff REPO=owner/name`.
@@ -194,7 +194,7 @@ Target another repo with `make repo-settings-diff REPO=owner/name`.
 **GitOps** — pushes touching `.github/repo-settings/**` trigger
 `.github/workflows/repo-settings.yml`: on a **non-`main` branch** the CI reports
 the drift (a preview of what merging will change); on **`main`** it applies
-`settings.json` to the repo. The **export stays manual**.
+`repo-settings.json` to the repo. The **export stays manual**.
 
 The CI needs a repository secret **`REPO_SETTINGS_TOKEN`**: a fine-grained PAT
 scoped to this repo with the **Administration** permission (read for `diff`,
@@ -227,7 +227,7 @@ Once the secret is stored, finish with:
 2. Preview what the CI will report: `make repo-settings-diff`.
 3. Re-run the previously failing `repo-settings` check on your PR (or push again) —
    it passes now that the token is present.
-4. Merge the PR: on the `main` branch the CI applies `settings.json` to the repo.
+4. Merge the PR: on the `main` branch the CI applies `repo-settings.json` to the repo.
 
 Other helpers:
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Export and apply the GitHub repository configuration as code.
 
-Source of truth: ``.github/repo-settings/settings.json`` — three sections:
+Source of truth: ``.github/repo-settings/repo-settings.json`` — three sections:
 ``repository`` (subset of the REST "Update a repository" body), ``rulesets``
 (createable ruleset bodies), and ``collaborators`` (outside collaborators).
 
@@ -10,10 +10,10 @@ via ``gh auth``, in CI via the ``GH_TOKEN`` env var holding a PAT with the
 Administration permission — required to read/write rulesets).
 
 Subcommands:
-  export    Read the live repo and (over)write settings.json.
-  validate  Validate settings.json against repo-settings.schema.json.
-  diff      Show drift between settings.json and the live repo (exit 0).
-  apply     Validate, then push settings.json to the repo via the API.
+  export    Read the live repo and (over)write repo-settings.json.
+  validate  Validate repo-settings.json against repo-settings.schema.json.
+  diff      Show drift between repo-settings.json and the live repo (exit 0).
+  apply     Validate, then push repo-settings.json to the repo via the API.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ from typing import Any
 import jsonschema
 
 ROOT = Path(__file__).resolve().parent.parent
-SETTINGS = ROOT / "settings.json"
+SETTINGS = ROOT / "repo-settings.json"
 SCHEMA = ROOT / "repo-settings.schema.json"
 DEFAULT_REPO = "gmocquet/neo"
 
@@ -259,21 +259,21 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("export", parents=[common], help="read the live repo and write settings.json")
-    sub.add_parser("validate", help="validate settings.json against the JSON Schema")
+    sub.add_parser("export", parents=[common], help="read the live repo and write repo-settings.json")
+    sub.add_parser("validate", help="validate repo-settings.json against the JSON Schema")
     diff_parser = sub.add_parser(
-        "diff", parents=[common], help="show drift between settings.json and the live repo"
+        "diff", parents=[common], help="show drift between repo-settings.json and the live repo"
     )
     diff_parser.add_argument(
         "--check", action="store_true", help="exit non-zero if drift is found (for CI gating)"
     )
     apply_parser = sub.add_parser(
-        "apply", parents=[common], help="validate, then push settings.json to the repo"
+        "apply", parents=[common], help="validate, then push repo-settings.json to the repo"
     )
     apply_parser.add_argument(
         "--prune",
         action="store_true",
-        help="also remove outside collaborators not declared in settings.json",
+        help="also remove outside collaborators not declared in repo-settings.json",
     )
 
     args = parser.parse_args(argv)
