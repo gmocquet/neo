@@ -1,4 +1,11 @@
 repos:
+  # gitleaks scans the staged changes for secrets on every commit — the
+  # contributor-facing counterpart of the no-secrets-on-commit agent guardrail.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:

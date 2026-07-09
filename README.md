@@ -77,8 +77,8 @@ Install instructions are provided per OS (Linux and Windows will come later).
 | [GitHub CLI](https://cli.github.com) (`gh`)         | Drives GitHub from the terminal — required by the `pr-writer` skill and the automated commit/PR workflow | `brew install gh` |
 | [`gitleaks`](https://gitleaks.io)                   | Secret scanner — required by the `no-secrets-on-commit` hook (which fails closed without it) | `brew install gitleaks`   |
 | [`jq`](https://jqlang.org)                          | JSON processor — used by the hooks to parse the tool-call input and by `make hooks-add` / `make hooks-remove` to edit the settings file | `brew install jq` |
-| [`pre-commit`](https://pre-commit.com)              | Git hooks manager — runs this repository's `.pre-commit-config.yaml` checks (contributors only) | `brew install pre-commit`      |
-| [`uv`](https://docs.astral.sh/uv/)                  | Python toolchain — runs the repo-settings automation (installs its pinned Python and deps) | `brew install uv`              |
+| [`pre-commit`](https://pre-commit.com)              | Git hooks manager for this repository's `.pre-commit-config.yaml` checks (contributors only) — pinned locally in `pyproject.toml` / `uv.lock`, run via `uv`, no separate install | provided by `uv` (`make pre-commit-install`) |
+| [`uv`](https://docs.astral.sh/uv/)                  | Python toolchain — runs the repo-settings automation and the project's pinned `pre-commit` (installs their pinned Python and deps) | `brew install uv`              |
 
 ### Install
 
@@ -118,13 +118,17 @@ repository are listed there.
 ### Enable the git hooks (contributors)
 
 The repository ships a [pre-commit](https://pre-commit.com) configuration
-(YAML/JSON sanity checks, whitespace and line-ending hygiene, GitHub Actions
-workflow linting). If you contribute to this repository, install the git hooks
-once:
+(secret scanning with gitleaks, YAML/JSON sanity checks, whitespace and
+line-ending hygiene, GitHub Actions workflow linting). If you contribute to this
+repository, install the git hooks once:
 
 ```bash
-pre-commit install
+make pre-commit-install
 ```
+
+This runs the project's pinned `pre-commit` (via `uv run`) to install the git
+hooks for the `pre-commit`, `commit-msg`, and `pre-push` stages. It only requires
+`uv`; pre-commit itself is pinned in `pyproject.toml` / `uv.lock`.
 
 ### Enable the hooks
 
