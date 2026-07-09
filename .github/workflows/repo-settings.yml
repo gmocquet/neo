@@ -1,0 +1,64 @@
+name: repo-settings
+
+# GitOps for the repository configuration (.github/repo-settings/):
+#   - push to main  -> apply settings.json to the live repo
+#   - push to any other branch -> report the diff between live and settings.json
+# The export (repo -> settings.json) stays manual (`make repo-settings-export`).
+#
+# Rulesets can only be read/written with a token that holds the "Administration"
+# permission, which the built-in GITHUB_TOKEN cannot be granted. So both jobs
+# need REPO_SETTINGS_TOKEN: a fine-grained PAT scoped to this repo with
+# Administration (read for diff, read/write for apply). When the secret is not
+# configured the job fails with an explicit error.
+
+on:
+  push:
+    paths:
+      - .github/repo-settings/**
+
+permissions:
+  contents: read
+
+jobs:
+  diff:
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - uses: astral-sh/setup-uv@v8.3.2
+      - name: Show config drift
+        env:
+          GH_TOKEN: ${{ secrets.REPO_SETTINGS_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::REPO_SETTINGS_TOKEN is not configured. Create a fine-grained PAT with Administration read/write and store it as the REPO_SETTINGS_TOKEN Actions secret (see README)."
+            exit 1
+          fi
+          code=0
+          out="$(uv run --project .github/repo-settings \
+            .github/repo-settings/scripts/repo_settings.py diff --repo "$GITHUB_REPOSITORY" 2>&1)" || code=$?
+          {
+            echo '### repo-settings drift'
+            echo '```'
+            echo "$out"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "$out"
+          exit "$code"
+
+  apply:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - uses: astral-sh/setup-uv@v8.3.2
+      - name: Apply settings to the repo
+        env:
+          GH_TOKEN: ${{ secrets.REPO_SETTINGS_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::REPO_SETTINGS_TOKEN is not configured. Create a fine-grained PAT with Administration read/write and store it as the REPO_SETTINGS_TOKEN Actions secret (see README)."
+            exit 1
+          fi
+          uv run --project .github/repo-settings \
+            .github/repo-settings/scripts/repo_settings.py apply --repo "$GITHUB_REPOSITORY"

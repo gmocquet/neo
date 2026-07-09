@@ -21,3 +21,12 @@ repos:
     rev: v1.7.12
     hooks:
       - id: actionlint
+
+  # Validate the repo-settings config against its JSON Schema.
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.37.4
+    hooks:
+      - id: check-jsonschema
+        name: Validate repo settings
+        files: ^\.github/repo-settings/settings\.json$
+        args: ["--schemafile", ".github/repo-settings/repo-settings.schema.json"]
