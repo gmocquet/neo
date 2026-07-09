@@ -1,0 +1,12 @@
+[project]
+name = "neo"
+version = "0.0.0"
+description = "Central versioned home for AI coding-agent assets — skills and hooks."
+requires-python = "==3.14.6"
+dependencies = []
+
+[dependency-groups]
+dev = ["pre-commit==4.6.0"]
+
+[tool.uv]
+package = false

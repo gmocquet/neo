@@ -24,7 +24,7 @@ REPO_SETTINGS_TOKEN_DESC := CI%20token%20for%20the%20neo%20repository%2C%20the%2
 REPO_SETTINGS_TOKEN_URL := https://github.com/settings/personal-access-tokens/new?name=$(REPO_NAME)-repo-settings&description=$(REPO_SETTINGS_TOKEN_DESC)&target_name=$(REPO_OWNER)&expires_in=none&administration=write
 
 .DEFAULT_GOAL := help
-.PHONY: help skills-link skills-unlink hooks-add hooks-remove repo-settings-export repo-settings-validate repo-settings-diff repo-settings-apply repo-settings-token-set repo-settings-token-status repo-settings-token-delete
+.PHONY: help skills-link skills-unlink hooks-add hooks-remove pre-commit-install repo-settings-export repo-settings-validate repo-settings-diff repo-settings-apply repo-settings-token-set repo-settings-token-status repo-settings-token-delete
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-24s %s\n", $$1, $$2}'
@@ -63,6 +63,10 @@ hooks-add: ## Register this repo's hooks in the user's Claude Code settings (jq 
 
 hooks-remove: ## Unregister this repo's hooks from the user's Claude Code settings (other hooks and keys preserved)
 	@"$(CURDIR)/hooks/hooks-config.sh" remove
+
+pre-commit-install: ## Install the pre-commit, commit-msg, and pre-push git hooks using the project's pinned pre-commit
+	@command -v uv >/dev/null 2>&1 || { echo "uv not found — install it first (e.g. brew install uv)"; exit 1; }
+	@uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push
 
 repo-settings-export: ## Export the live repo config into .github/repo-settings/repo-settings.json (manual)
 	@$(REPO_SETTINGS) export --repo $(REPO)
