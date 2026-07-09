@@ -75,6 +75,7 @@ Install instructions are provided per OS (Linux and Windows will come later).
 | [GitHub CLI](https://cli.github.com) (`gh`)         | Drives GitHub from the terminal — required by the `pr-writer` skill and the automated commit/PR workflow | `brew install gh` |
 | [`gitleaks`](https://gitleaks.io)                   | Secret scanner — required by the `no-secrets-on-commit` hook (which fails closed without it) | `brew install gitleaks`   |
 | [`jq`](https://jqlang.org)                          | JSON processor — used by the hooks to parse the tool-call input and by `make hooks-add` / `make hooks-remove` to edit the settings file | `brew install jq` |
+| [`pre-commit`](https://pre-commit.com)              | Git hooks manager — runs this repository's `.pre-commit-config.yaml` checks (contributors only) | `brew install pre-commit`      |
 
 ### Install
 
@@ -110,6 +111,17 @@ Then start Claude Code and type `/` — the skills appear in the command list
 (e.g. `/neo-challenge-review`). You can also run `/skills` to list every skill
 Claude Code has picked up: if everything is OK, all the skills of this
 repository are listed there.
+
+### Enable the git hooks (contributors)
+
+The repository ships a [pre-commit](https://pre-commit.com) configuration
+(YAML/JSON sanity checks, whitespace and line-ending hygiene, GitHub Actions
+workflow linting). If you contribute to this repository, install the git hooks
+once:
+
+```bash
+pre-commit install
+```
 
 ### Enable the hooks
 
