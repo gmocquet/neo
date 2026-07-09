@@ -12,9 +12,9 @@
 | AI agent | Claude Code (CLI) `2.1.204` |
 | Model | Claude Fable 5 (`claude-fable-5`) |
 | Model reasoning effort | `xhigh` (set via `/effort` at session start) |
-| OS | macOS 26.5.2 (build 25F84, Darwin 25.5.0) |                                                                                                                         
-| Architecture | `arm64` (Apple Silicon) |                                                                                                                                 
-| Session start | 2026-07-08 ≈ 09:00 CEST (Europe/Paris) | 
+| OS | macOS 26.5.2 (build 25F84, Darwin 25.5.0) |
+| Architecture | `arm64` (Apple Silicon) |
+| Session start | 2026-07-08 ≈ 09:00 CEST (Europe/Paris) |
 
 ## 1. What the skill is
 
@@ -210,8 +210,8 @@ Report file: `<outputDir>/challenge-review-{YYYY-MM-DD-HH-MM}.md` (+ `.fr.md`). 
   profiles, installs); never modify the skill's own files. Analysis/compare/questions agents
   are fully READ-ONLY.
 - **Execution**: local only — never provision real cloud resources, no live deploys, no real
-  credentials. For `terraform apply`; `docker build`/`docker run` or `local tests` do it only when 
-  it targets local emulators (LocalStack, MinIO, RustFS, kind, docker, ...) 
+  credentials. For `terraform apply`; `docker build`/`docker run` or `local tests` do it only when
+  it targets local emulators (LocalStack, MinIO, RustFS, kind, docker, ...)
   without any real cloud credentials; only dummy credentials are allowed. At the first place, run only what their docs
   instruct. Try to fix issues until the 10-attempt cap, then report how far it got.
 - Prompt-level guardrails, not an OS sandbox — Claude Code permissions remain the real barrier.
