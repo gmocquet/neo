@@ -1,0 +1,180 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/gmocquet/neo/.github/repo-settings/repo-settings.schema.json",
+  "title": "GitHub repository settings as code",
+  "description": "Validates .github/repo-settings/settings.json: the managed subset of the GitHub repository configuration (repository core settings, rulesets, and outside collaborators) synced by scripts/repo_settings.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["repository", "rulesets", "collaborators"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Path to this JSON Schema, enabling live editor validation. Stripped before any API call."
+    },
+    "repository": { "$ref": "#/$defs/repository" },
+    "rulesets": {
+      "type": "array",
+      "title": "Repository rulesets",
+      "items": { "$ref": "#/$defs/ruleset" }
+    },
+    "collaborators": {
+      "type": "array",
+      "title": "Outside collaborators",
+      "description": "Direct collaborators other than the owner. Empty on a personal repo with no outside collaborators.",
+      "items": { "$ref": "#/$defs/collaborator" }
+    }
+  },
+  "$defs": {
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "title": "Repository core settings",
+      "description": "Subset of the GitHub REST 'Update a repository' body (PATCH /repos/{owner}/{repo}).",
+      "properties": {
+        "description": { "type": "string", "title": "Short description" },
+        "homepage": { "type": "string", "title": "Homepage URL" },
+        "default_branch": { "type": "string", "title": "Default branch" },
+        "visibility": { "enum": ["public", "private", "internal"], "title": "Visibility" },
+        "has_issues": { "type": "boolean", "title": "Enable Issues" },
+        "has_projects": { "type": "boolean", "title": "Enable Projects" },
+        "has_wiki": { "type": "boolean", "title": "Enable Wiki" },
+        "has_discussions": { "type": "boolean", "title": "Enable Discussions" },
+        "has_downloads": { "type": "boolean", "title": "Enable Downloads" },
+        "is_template": { "type": "boolean", "title": "Template repository" },
+        "allow_forking": { "type": "boolean", "title": "Allow forking" },
+        "web_commit_signoff_required": { "type": "boolean", "title": "Require web commit sign-off" },
+        "allow_squash_merge": { "type": "boolean", "title": "Allow squash merging" },
+        "allow_merge_commit": { "type": "boolean", "title": "Allow merge commits" },
+        "allow_rebase_merge": { "type": "boolean", "title": "Allow rebase merging" },
+        "allow_auto_merge": { "type": "boolean", "title": "Allow auto-merge" },
+        "delete_branch_on_merge": { "type": "boolean", "title": "Auto-delete head branches on merge" },
+        "allow_update_branch": { "type": "boolean", "title": "Always suggest updating PR branches" },
+        "squash_merge_commit_title": {
+          "enum": ["PR_TITLE", "COMMIT_OR_PR_TITLE"],
+          "title": "Squash commit title source"
+        },
+        "squash_merge_commit_message": {
+          "enum": ["PR_BODY", "COMMIT_MESSAGES", "BLANK"],
+          "title": "Squash commit message source"
+        },
+        "merge_commit_title": { "enum": ["PR_TITLE", "MERGE_MESSAGE"], "title": "Merge commit title source" },
+        "merge_commit_message": { "enum": ["PR_BODY", "PR_TITLE", "BLANK"], "title": "Merge commit message source" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": ["squash_merge_commit_title"],
+            "properties": { "squash_merge_commit_title": { "const": "PR_TITLE" } }
+          },
+          "then": { "properties": { "squash_merge_commit_message": { "enum": ["BLANK", "PR_BODY"] } } }
+        },
+        {
+          "if": {
+            "required": ["squash_merge_commit_title"],
+            "properties": { "squash_merge_commit_title": { "const": "COMMIT_OR_PR_TITLE" } }
+          },
+          "then": { "properties": { "squash_merge_commit_message": { "enum": ["COMMIT_MESSAGES"] } } }
+        }
+      ]
+    },
+    "ruleset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "target", "enforcement", "rules"],
+      "properties": {
+        "name": { "type": "string", "title": "Ruleset name (match key for apply)" },
+        "target": { "enum": ["branch", "tag", "push"], "title": "Ruleset target" },
+        "enforcement": { "enum": ["active", "evaluate", "disabled"], "title": "Enforcement status" },
+        "conditions": { "$ref": "#/$defs/conditions" },
+        "rules": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
+        "bypass_actors": { "type": "array", "items": { "$ref": "#/$defs/bypass_actor" } }
+      }
+    },
+    "conditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ref_name": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "include": { "type": "array", "items": { "type": "string" } },
+            "exclude": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "title": "Rule type",
+          "enum": [
+            "creation",
+            "update",
+            "deletion",
+            "required_linear_history",
+            "merge_queue",
+            "required_deployments",
+            "required_signatures",
+            "pull_request",
+            "required_status_checks",
+            "non_fast_forward",
+            "commit_message_pattern",
+            "commit_author_email_pattern",
+            "committer_email_pattern",
+            "branch_name_pattern",
+            "tag_name_pattern",
+            "file_path_restriction",
+            "max_file_path_length",
+            "file_extension_restriction",
+            "max_file_size",
+            "workflows",
+            "code_scanning"
+          ]
+        },
+        "parameters": { "$ref": "#/$defs/pull_request_parameters" }
+      }
+    },
+    "pull_request_parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Parameters of the 'pull_request' rule type.",
+      "properties": {
+        "required_approving_review_count": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "dismiss_stale_reviews_on_push": { "type": "boolean" },
+        "require_code_owner_review": { "type": "boolean" },
+        "require_last_push_approval": { "type": "boolean" },
+        "required_review_thread_resolution": { "type": "boolean" },
+        "required_reviewers": { "type": "array", "items": { "type": "object" } },
+        "allowed_merge_methods": {
+          "type": "array",
+          "items": { "enum": ["merge", "squash", "rebase"] }
+        }
+      }
+    },
+    "bypass_actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor_type", "bypass_mode"],
+      "properties": {
+        "actor_id": { "type": ["integer", "null"] },
+        "actor_type": {
+          "enum": ["RepositoryRole", "Team", "Integration", "OrganizationAdmin", "DeployKey"]
+        },
+        "bypass_mode": { "enum": ["always", "pull_request"] }
+      }
+    },
+    "collaborator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["username", "permission"],
+      "properties": {
+        "username": { "type": "string" },
+        "permission": { "enum": ["pull", "triage", "push", "maintain", "admin"] }
+      }
+    }
+  }
+}
