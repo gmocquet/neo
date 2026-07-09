@@ -1,0 +1,9 @@
+{
+  "event": "PreToolUse",
+  "matcher": "Bash",
+  "hook": {
+    "type": "command",
+    "command": "{{HOOK_DIR}}/gitleaks-guard.sh",
+    "timeout": 30
+  }
+}

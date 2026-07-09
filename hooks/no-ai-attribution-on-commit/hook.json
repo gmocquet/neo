@@ -1,0 +1,9 @@
+{
+  "event": "PreToolUse",
+  "matcher": "Bash",
+  "hook": {
+    "type": "command",
+    "command": "{{HOOK_DIR}}/attribution-guard.sh",
+    "timeout": 10
+  }
+}
