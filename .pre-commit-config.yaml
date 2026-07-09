@@ -28,5 +28,5 @@ repos:
     hooks:
       - id: check-jsonschema
         name: Validate repo settings
-        files: ^\.github/repo-settings/settings\.json$
+        files: ^\.github/repo-settings/repo-settings\.json$
         args: ["--schemafile", ".github/repo-settings/repo-settings.schema.json"]

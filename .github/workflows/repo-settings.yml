@@ -1,9 +1,9 @@
 name: repo-settings
 
 # GitOps for the repository configuration (.github/repo-settings/):
-#   - push to main  -> apply settings.json to the live repo
-#   - push to any other branch -> report the diff between live and settings.json
-# The export (repo -> settings.json) stays manual (`make repo-settings-export`).
+#   - push to main  -> apply repo-settings.json to the live repo
+#   - push to any other branch -> report the diff between live and repo-settings.json
+# The export (repo -> repo-settings.json) stays manual (`make repo-settings-export`).
 #
 # Rulesets can only be read/written with a token that holds the "Administration"
 # permission, which the built-in GITHUB_TOKEN cannot be granted. So both jobs
