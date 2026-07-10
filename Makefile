@@ -92,7 +92,7 @@ repo-settings-diff: ## Show drift between repo-settings.json and the live repo c
 repo-settings-apply: ## Apply repo-settings.json to the repo config via the API
 	@$(REPO_SETTINGS) apply --repo $(REPO)
 
-repo-settings-token-set: ## Create the CI PAT (pre-filled page), verify it can administer the repo, and store it as REPO_SETTINGS_TOKEN
+repo-settings-token-set: ## Open the pre-filled PAT creation page, wait for the token, then store it as the REPO_SETTINGS_TOKEN secret
 	@echo "About this token: it lets the CI apply $(REPO_NAME)'s GitHub configuration"
 	@echo "(settings, rulesets, access) as code. $(REPO_NAME) = central versioned home for"
 	@echo "AI coding-agent assets (skills, hooks). Scope: Administration read/write on $(REPO_NAME)."
@@ -106,14 +106,9 @@ repo-settings-token-set: ## Create the CI PAT (pre-filled page), verify it can a
 	@if command -v open >/dev/null 2>&1; then open "$(REPO_SETTINGS_TOKEN_URL)"; \
 		elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$(REPO_SETTINGS_TOKEN_URL)"; \
 		else echo "Open this URL: $(REPO_SETTINGS_TOKEN_URL)"; fi
-	@printf "Paste the token, then press Enter: "; \
-		stty -echo 2>/dev/null; read -r token; stty echo 2>/dev/null; echo; \
-		[ -n "$$token" ] || { echo "no token entered — aborting." >&2; exit 1; }; \
-		echo "==> verifying the token can administer $(REPO) (no-op settings write)..."; \
-		issues=$$(GH_TOKEN="$$token" gh api "repos/$(REPO)" -q '.has_issues' 2>/dev/null) || { echo "ERROR: token cannot read $(REPO) — wrong repository selected? NOT stored." >&2; exit 1; }; \
-		GH_TOKEN="$$token" gh api -X PATCH "repos/$(REPO)" -F "has_issues=$$issues" >/dev/null 2>&1 || { echo "ERROR: token lacks Administration write on $(REPO) — NOT stored." >&2; echo "  Fix the PAT: Resource owner -> $(REPO_OWNER); Repository access -> Only select repositories -> $(REPO); Administration: Read and write." >&2; exit 1; }; \
-		printf '%s' "$$token" | gh secret set $(REPO_SETTINGS_SECRET) --repo $(REPO) \
-		&& echo "==> $(REPO_SETTINGS_SECRET) stored and verified on $(REPO)."
+	@printf "Press Enter once the token is generated and copied... "; read -r _
+	@echo "Paste the token when prompted (input is masked):"
+	@gh secret set $(REPO_SETTINGS_SECRET) --repo $(REPO)
 	@echo ""
 	@echo "Secret stored on $(REPO). Next steps:"
 	@echo "  1. Check it:          make repo-settings-token-status"
