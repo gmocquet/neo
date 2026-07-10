@@ -21,7 +21,7 @@ REPO_NAME  := $(notdir $(REPO))
 #  workflow to apply the repository configuration (settings, rulesets, and access)
 #  as code. Scope: Administration read and write on neo only."
 REPO_SETTINGS_TOKEN_DESC := CI%20token%20for%20the%20neo%20repository%2C%20the%20central%20versioned%20home%20for%20AI%20coding-agent%20assets%20such%20as%20skills%20and%20hooks.%20Used%20by%20the%20repo-settings%20GitHub%20Actions%20workflow%20to%20apply%20the%20repository%20configuration%20%28settings%2C%20rulesets%2C%20and%20access%29%20as%20code.%20Scope%3A%20Administration%20read%20and%20write%20on%20neo%20only.
-REPO_SETTINGS_TOKEN_NAME := ci-repo-settings-$(REPO_NAME)
+REPO_SETTINGS_TOKEN_NAME := ci-gh-pat-token-$(REPO_NAME)
 REPO_SETTINGS_TOKEN_URL := https://github.com/settings/personal-access-tokens/new?name=$(REPO_SETTINGS_TOKEN_NAME)&description=$(REPO_SETTINGS_TOKEN_DESC)&target_name=$(REPO_OWNER)&expires_in=none&administration=write
 
 .DEFAULT_GOAL := help
