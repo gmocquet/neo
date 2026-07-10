@@ -82,14 +82,40 @@ Install instructions are provided per OS (Linux and Windows will come later).
 
 ### Install
 
-Skills must live in the agent's user-level skills directory (`~/.claude/skills`
-for Claude Code). The `skills-link` target symlinks every skill from this repository
-into that directory:
+Clone the repository and bootstrap the local environment:
 
 ```bash
 git clone git@github.com:gmocquet/neo.git
 cd neo
-make skills-link
+make init
+```
+
+`make init` sets up the local toolchain — it installs the pinned Python
+dependencies (`uv sync`) and the project's git hooks (`make pre-commit-install`).
+Run it once after cloning.
+
+Then install the AI assets (skills + hooks) at the user level, using **one** of the
+two approaches below.
+
+#### Option 1 — everything at once (automated, recommended)
+
+```bash
+make sync-add      # symlink every skill + register every hook
+make sync-remove   # undo both (unlink skills + unregister hooks)
+```
+
+`sync-add` runs `skills-link` and `hooks-add` together; `sync-remove` runs
+`skills-unlink` and `hooks-remove`. It installs only the user-level AI assets
+(skills and hooks) — the repo-settings automation is separate.
+
+#### Option 2 — per asset (manual)
+
+The individual targets are still available when you want finer control over what
+is installed. Skills are symlinked into `~/.claude/skills`:
+
+```bash
+make skills-link     # symlink every skill
+make skills-unlink   # remove those symlinks
 ```
 
 Because the skills are **symlinked** (not copied):
@@ -102,7 +128,8 @@ the changes (`/reload-skills` in Claude Code); new sessions load them automatica
 
 `make skills-link` is idempotent and safe: it refreshes existing symlinks, but never
 overwrites a real file or directory already present in `~/.claude/skills` — it
-skips it and warns you so you can resolve the conflict manually.
+skips it and warns you so you can resolve the conflict manually. Hooks are
+registered separately — see [Enable the hooks](#enable-the-hooks) below.
 
 ### Verify
 
@@ -119,8 +146,9 @@ repository are listed there.
 
 The repository ships a [pre-commit](https://pre-commit.com) configuration
 (secret scanning with gitleaks, YAML/JSON sanity checks, whitespace and
-line-ending hygiene, GitHub Actions workflow linting). If you contribute to this
-repository, install the git hooks once:
+line-ending hygiene, GitHub Actions workflow linting). **`make init` already
+installs these git hooks** — this is only needed if you skipped `init` or want to
+reinstall them:
 
 ```bash
 make pre-commit-install
@@ -133,8 +161,9 @@ hooks for the `pre-commit`, `commit-msg`, and `pre-push` stages. It only require
 ### Enable the hooks
 
 Unlike skills, hooks are not discovered from a directory: they are registered in
-Claude Code settings — `~/.claude/repo-settings.json` (user scope, so the guardrails
-protect **every** repository you work on):
+Claude Code settings — `~/.claude/settings.json` (user scope, so the guardrails
+protect **every** repository you work on). **Option 1** (`make sync-add`) already
+does this; the targets below are **Option 2**, for managing the hooks on their own:
 
 ```bash
 make hooks-add     # register every hook of this repo
@@ -168,10 +197,13 @@ CLAUDE_SKILLS_DIR=/path/to/your/agent/skills make skills-link
 
 ### Uninstall
 
-Remove the symlinks installed by `make skills-link` — the repository copies are untouched:
+Remove everything installed above with **Option 1** — `make sync-remove` (unlinks
+the skills and unregisters the hooks). Or, per asset (**Option 2**), remove just
+the skill symlinks — the repository copies are untouched:
 
 ```bash
-make skills-unlink
+make sync-remove     # skills + hooks (Option 1)
+make skills-unlink   # skills only  (Option 2)
 ```
 
 `make skills-unlink` is as careful as `make skills-link`: it only removes symlinks that point

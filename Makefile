@@ -24,10 +24,15 @@ REPO_SETTINGS_TOKEN_DESC := CI%20token%20for%20the%20neo%20repository%2C%20the%2
 REPO_SETTINGS_TOKEN_URL := https://github.com/settings/personal-access-tokens/new?name=$(REPO_NAME)-repo-settings&description=$(REPO_SETTINGS_TOKEN_DESC)&target_name=$(REPO_OWNER)&expires_in=none&administration=write
 
 .DEFAULT_GOAL := help
-.PHONY: help sync-add sync-remove skills-link skills-unlink hooks-add hooks-remove pre-commit-install repo-settings-export repo-settings-validate repo-settings-diff repo-settings-apply repo-settings-token-set repo-settings-token-status repo-settings-token-delete
+.PHONY: help init sync-add sync-remove skills-link skills-unlink hooks-add hooks-remove pre-commit-install repo-settings-export repo-settings-validate repo-settings-diff repo-settings-apply repo-settings-token-set repo-settings-token-status repo-settings-token-delete
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-24s %s\n", $$1, $$2}'
+
+init: ## Set up the local dev environment (uv sync + git hooks) — run once after cloning
+	@command -v uv >/dev/null 2>&1 || { echo "uv not found — install it first (e.g. brew install uv)"; exit 1; }
+	@uv sync
+	@$(MAKE) --no-print-directory pre-commit-install
 
 sync-add: skills-link hooks-add ## Install every AI asset at the user level (skills + hooks); repo-settings excluded
 	@echo "sync-add: skills linked and hooks registered."
