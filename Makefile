@@ -21,7 +21,8 @@ REPO_NAME  := $(notdir $(REPO))
 #  workflow to apply the repository configuration (settings, rulesets, and access)
 #  as code. Scope: Administration read and write on neo only."
 REPO_SETTINGS_TOKEN_DESC := CI%20token%20for%20the%20neo%20repository%2C%20the%20central%20versioned%20home%20for%20AI%20coding-agent%20assets%20such%20as%20skills%20and%20hooks.%20Used%20by%20the%20repo-settings%20GitHub%20Actions%20workflow%20to%20apply%20the%20repository%20configuration%20%28settings%2C%20rulesets%2C%20and%20access%29%20as%20code.%20Scope%3A%20Administration%20read%20and%20write%20on%20neo%20only.
-REPO_SETTINGS_TOKEN_URL := https://github.com/settings/personal-access-tokens/new?name=$(REPO_NAME)-repo-settings&description=$(REPO_SETTINGS_TOKEN_DESC)&target_name=$(REPO_OWNER)&expires_in=none&administration=write
+REPO_SETTINGS_TOKEN_NAME := ci-gh-pat-token-$(REPO_NAME)
+REPO_SETTINGS_TOKEN_URL := https://github.com/settings/personal-access-tokens/new?name=$(REPO_SETTINGS_TOKEN_NAME)&description=$(REPO_SETTINGS_TOKEN_DESC)&target_name=$(REPO_OWNER)&expires_in=none&administration=write
 
 .DEFAULT_GOAL := help
 .PHONY: help init sync-add sync-remove skills-link skills-unlink hooks-add hooks-remove pre-commit-install repo-settings-export repo-settings-validate repo-settings-diff repo-settings-apply repo-settings-token-set repo-settings-token-status repo-settings-token-delete
@@ -106,7 +107,7 @@ repo-settings-token-set: ## Open the pre-filled PAT creation page, wait for the 
 		elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$(REPO_SETTINGS_TOKEN_URL)"; \
 		else echo "Open this URL: $(REPO_SETTINGS_TOKEN_URL)"; fi
 	@printf "Press Enter once the token is generated and copied... "; read -r _
-	@echo "Paste the token when prompted:"
+	@echo "Paste the token when prompted (input is masked):"
 	@gh secret set $(REPO_SETTINGS_SECRET) --repo $(REPO)
 	@echo ""
 	@echo "Secret stored on $(REPO). Next steps:"
@@ -120,5 +121,16 @@ repo-settings-token-status: ## Report whether the REPO_SETTINGS_TOKEN Actions se
 		&& echo "$(REPO_SETTINGS_SECRET): set on $(REPO)" \
 		|| echo "$(REPO_SETTINGS_SECRET): not set on $(REPO)"
 
-repo-settings-token-delete: ## Delete the REPO_SETTINGS_TOKEN Actions secret
-	@gh secret delete $(REPO_SETTINGS_SECRET) --repo $(REPO)
+repo-settings-token-delete: ## Delete the REPO_SETTINGS_TOKEN Actions secret and open the tokens page to revoke the PAT
+	@if gh secret delete $(REPO_SETTINGS_SECRET) --repo $(REPO) 2>/dev/null; then \
+		echo "==> deleted the $(REPO_SETTINGS_SECRET) Actions secret from $(REPO)"; \
+	else \
+		echo "==> $(REPO_SETTINGS_SECRET) Actions secret not found on $(REPO) (already removed?)"; \
+	fi
+	@echo ""
+	@echo "GitHub has no API to delete a personal access token — revoke it in the browser:"
+	@echo "  find the fine-grained token named '$(REPO_SETTINGS_TOKEN_NAME)' (or whichever you created), open it, and Delete."
+	@echo "  https://github.com/settings/personal-access-tokens"
+	@if command -v open >/dev/null 2>&1; then open "https://github.com/settings/personal-access-tokens"; \
+		elif command -v xdg-open >/dev/null 2>&1; then xdg-open "https://github.com/settings/personal-access-tokens"; \
+		else echo "Open this URL: https://github.com/settings/personal-access-tokens"; fi
