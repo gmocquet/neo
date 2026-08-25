@@ -90,6 +90,11 @@ holds it:
 
 <COMMIT_HOOK_NOTE>
 
+**Run each gate step as its own command.** Do not chain them with `&&` into one long invocation, and
+do not wrap the whole gate in a script. A command that runs silently for several minutes looks
+indistinguishable from a hung agent, and the harness kills it — losing the run, not the work. One
+step, one call, output landing between each.
+
 A red gate is a result, not a setback. Fix the code, the tests, the docs or the spec — never the
 gate, never a skipped test, never `--no-verify`.
 

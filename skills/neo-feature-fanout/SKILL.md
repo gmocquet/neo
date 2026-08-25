@@ -240,11 +240,22 @@ Three rules about filling it:
   already there will build a second one beside it.
 - **Give each agent only its own change.** An agent handed the full feature list will helpfully
   implement its neighbour's, in its neighbour's files.
+- **Tell it to run each gate step as its own command**, never chained into one long invocation. A
+  command that runs silently for several minutes is indistinguishable from a hung agent, and a host
+  that watches for liveness kills it. The work survives on disk, but the run does not, and you pay
+  for the restart. For the same reason, anything that queues must keep printing — see the lock's
+  heartbeat.
 
 Launch a wave with the Task tool, **every agent of the wave in a single message** so they actually
 run at the same time; one message per agent runs them one after another. Then stay available: you
 answer their questions, you re-plan when one reports a file it needs and does not own, and you never
 take over its implementation.
+
+An agent killed mid-flight is recoverable and usually worth recovering: its worktree still holds
+everything it wrote. Establish the real state from the outside — `git log`, `git status`, the
+diagnostics — and hand that state back to it when you resume, rather than letting it re-derive where
+it had got to. Say plainly that it was interrupted rather than mistaken; an agent told only "carry
+on" tends to start again from the beginning.
 
 When a wave returns, re-run the collision check against what was **actually written** —
 `git diff --name-only <base>...<branch>` per branch — before dispatching the next wave. The plan

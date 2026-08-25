@@ -18,6 +18,11 @@
 #   NEO_LOCK_STALE    seconds after which a dead owner's lock
 #                     may be broken                               (default 1800)
 #   NEO_LOCK_POLL     seconds between attempts                    (default 5)
+#   NEO_LOCK_HEARTBEAT seconds between "still waiting" lines       (default 60)
+#
+# The heartbeat is not cosmetic. An agent harness that watches a subprocess for
+# liveness kills it after a few minutes of total silence, so a lock that waits
+# quietly gets its own holder-in-waiting killed. Keep printing.
 #
 # Exit status: the wrapped command's, 2 on a usage error, or 75 (EX_TEMPFAIL)
 # when the lock never came free.
@@ -48,6 +53,7 @@ esac
 timeout=${NEO_LOCK_TIMEOUT:-3600}
 stale=${NEO_LOCK_STALE:-1800}
 poll=${NEO_LOCK_POLL:-5}
+heartbeat=${NEO_LOCK_HEARTBEAT:-60}
 
 owner_file=$lock_dir/owner
 host=$(hostname 2>/dev/null || echo unknown)
@@ -114,6 +120,7 @@ break_if_stale() {
 
 waited=0
 announced=0
+since_beat=0
 
 while ! mkdir "$lock_dir" 2>/dev/null; do
   if break_if_stale; then
@@ -128,11 +135,16 @@ while ! mkdir "$lock_dir" 2>/dev/null; do
 
   if [ "$announced" -eq 0 ]; then
     printf '%s: waiting for %s\n' "$PROGRAM" "$lock_dir" >&2
+    sed -n 's/^command=/  held by: /p' "$owner_file" 2>/dev/null >&2
     announced=1
+  elif [ "$since_beat" -ge "$heartbeat" ]; then
+    printf '%s: still waiting, %ss elapsed\n' "$PROGRAM" "$waited" >&2
+    since_beat=0
   fi
 
   sleep "$poll"
   waited=$(( waited + poll ))
+  since_beat=$(( since_beat + poll ))
 done
 
 {
