@@ -37,6 +37,7 @@ neo/
     ├── ask-questions-about-codebase/
     ├── create-review-about-codebase/
     ├── neo-challenge-review/
+    ├── neo-feature-fanout/
     └── pr-writer/
 ```
 
@@ -45,6 +46,7 @@ neo/
 | Skill                          | Audience          | What it does                                                                                                                                                                                                                                                            |
 | ------------------------------ | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `neo-challenge-review`         | EMs / hiring managers | Critical, scored review of a candidate's take-home tech-challenge submission. Fans out one agent per indicator (DevEx, AI usage rate & quality, security, production readiness, automation, tests, challenge coverage, runability), optionally builds blind AI baseline implementations to separate candidate contributions from AI contributions, and produces a scored report with a radar chart plus 10 interview questions. Depth is tunable: `analyze`, `run`, or `benchmark`. |
+| `neo-feature-fanout`           | Developers & EMs  | Turns a list of features into independent units of work — one change proposal, one worktree, one agent, one pull request each — and dispatches them in parallel. Maps features to changes by evidence rather than one-to-one, plans the waves around the file collisions they would cause, serialises whatever shares a database, a port or a generated artifact, and reports the merge order once the pull requests are open. Never merges. |
 | `ask-questions-about-codebase` | Developers & EMs  | Analyzes a codebase and generates critical questions about architecture decisions, project structure, local development setup, and engineering best practices. Focused on Python and Infrastructure as Code (Terraform/OpenTofu) projects.                               |
 | `create-review-about-codebase` | Developers & EMs  | Companion of `ask-questions-about-codebase`: combines the generated questions with your manual notes (`.data/my-notes.md`) into a final codebase review report.                                                                                                          |
 | `pr-writer`                    | Developers        | Creates and updates GitHub pull requests (via the `gh` CLI) with consistent titles, descriptions, and issue references.                                                                                                                                                  |
