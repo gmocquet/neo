@@ -145,6 +145,18 @@ produced each verdict.**
 **e. Verify where it is cheap.** Run a candidate twice concurrently from two directories and see
 whether both pass. Where verifying means destroying, trust the reading and forbid.
 
+**f. Ask what survives the lock.** Serialising a command stops two runs from colliding; it does not
+undo what either one leaves behind. A schema migration, a seeded fixture, a created bucket or queue
+persists in the shared resource after the lock is released, so the *second* change now builds against
+a database carrying the *first* change's structure — on a branch that does not contain it. That is
+not a failure, and agents must be told so plainly or they will chase it: expect to see a sibling's
+columns and types, and never assert that a shared resource contains *only* what your own change put
+there. An assertion of the form "the schema has exactly N types" is guaranteed to break the day a
+sibling merges.
+
+Where the persistent state would genuinely corrupt a result rather than merely surprise, the wave is
+wrong: move one of the two changes to the next wave.
+
 **The lock.** macOS ships no `flock(1)`, and a lock file created with a shell redirect is not
 atomic — two shells can both believe they created it. `mkdir` is atomic on every POSIX filesystem,
 including APFS, so the lock is a directory. It lives in this skill:
